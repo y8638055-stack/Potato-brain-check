@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaushik Security Protocol v.9.9 [ULTIMATE]</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f7ff;
+            --neon-red: #ff0055;
+            --neon-green: #00ff41;
+            --dark-bg: #050505;
+            --terminal-bg: #0a0a12;
+            --text-dim: #6e7f91;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; padding: 20px; background-color: var(--dark-bg);
+            color: var(--neon-blue); font-family: 'Fira Code', monospace;
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            overflow-x: hidden;
+            /* CRT Scanline Effect */
+            background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+        }
+
+        /* === MAIN CONTAINER === */
+        .container {
+            width: 100%; max-width: 600px; background: var(--terminal-bg);
+            border: 1px solid var(--neon-blue); box-shadow: 0 0 20px rgba(0, 247, 255, 0.1);
+            padding: 30px; border-radius: 8px; position: relative; display: none;
+            z-index: 10;
+        }
+        .container.active { display: block; animation: flickerIn 0.8s ease-in-out; }
+
+        h1 { margin: 0; font-size: 1.2rem; letter-spacing: 2px; color: var(--neon-red); text-transform: uppercase; }
+        .status-bar { border-bottom: 2px solid var(--neon-blue); padding-bottom: 15px; margin-bottom: 25px; }
+        .blink { animation: blinker 1s linear infinite; }
+        
+        /* === STEPS & INPUTS === */
+        .step { display: none; }
+        .step.active { display: block; animation: slideUp 0.5s ease; }
+
+        input[type="text"] {
+            width: 100%; background: #000; border: 1px solid var(--neon-blue); color: var(--neon-blue);
+            padding: 15px; font-family: 'Fira Code', monospace; margin: 15px 0; outline: none; transition: 0.3s;
+        }
+        input[type="text"]:focus { box-shadow: 0 0 15px var(--neon-blue); }
+        input[type="range"] { width: 100%; accent-color: var(--neon-red); margin: 20px 0; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .btn {
+            background: var(--neon-blue); color: #000; border: none; padding: 15px 20px;
+            font-weight: 700; cursor: pointer; text-transform: uppercase; flex: 1; transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+        }
+        .btn:hover { background: #fff; box-shadow: 0 0 20px var(--neon-blue); transform: translateY(-2px); }
+        .btn-danger { background: rgba(255, 0, 85, 0.2); color: var(--neon-red); border: 1px solid var(--neon-red); }
+        .btn-danger:hover { background: var(--neon-red); color: #fff; box-shadow: 0 0 30px var(--neon-red); }
+
+        .log-box {
+            background: #000; border: 1px solid var(--text-dim); padding: 15px;
+            height: 100px; overflow-y: auto; color: var(--text-dim); font-size: 0.8rem; margin-bottom: 20px;
+        }
+
+        /* === GOD LEVEL ALERT MODAL === */
+        #custom-alert-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); z-index: 9999;
+            align-items: center; justify-content: center;
+        }
+        .alert-box {
+            background: #050000; border: 2px solid var(--neon-red); padding: 30px;
+            max-width: 400px; width: 85%; text-align: center;
+            box-shadow: 0 0 50px rgba(255, 0, 85, 0.4);
+            animation: bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+        .alert-box h2 { color: var(--neon-red); margin-top: 0; text-transform: uppercase; letter-spacing: 2px; animation: glitch 1s infinite; }
+        .alert-box p { color: #fff; font-size: 1.1rem; line-height: 1.5; }
+        .alert-btn {
+            background: var(--neon-red); color: #fff; border: none; padding: 12px 30px;
+            margin-top: 20px; font-family: 'Fira Code'; font-weight: bold; cursor: pointer;
+            text-transform: uppercase; box-shadow: 0 0 15px var(--neon-red);
+        }
+        .alert-btn:hover { background: #fff; color: var(--neon-red); }
+
+        /* === SCREENS === */
+        #boot-screen { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:999; padding: 20px; color: #0f0; font-size: 0.9rem; }
+        #bsod-screen { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:#0000aa; color:#fff; z-index:1000; padding: 40px; font-family: 'Courier New', Courier, monospace; }
+        
+        #moving-target { position: relative; height: 100px; border: 1px dashed #333; margin-top: 20px; }
+        #run-btn { position: absolute; width: auto; z-index: 100; }
+
+        /* === ANIMATIONS === */
+        @keyframes blinker { 50% { opacity: 0; } }
+        @keyframes flickerIn { 0% { opacity: 0; } 10% { opacity: 1; } 20% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes bounceIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes glitch { 
+            0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 
+            40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 
+            80% { transform: translate(2px, -2px); } 100% { transform: translate(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="boot-screen"><div id="boot-text"></div></div>
+
+    <div id="custom-alert-overlay">
+        <div class="alert-box">
+            <h2>⚠️ SYSTEM ERROR ⚠️</h2>
+            <p id="alert-msg">Error Message Goes Here</p>
+            <button class="alert-btn" onclick="closeAlert()">I AM SORRY</button>
+        </div>
+    </div>
+
+    <div id="bsod-screen">
+        <p>A fatal exception 0E has occurred at 0028:C0011E36 in VXD VMM(01) + 00010E36.</p>
+        <p>ERROR: RUMINA_IS_GADHI_CONFIRMED</p>
+        <p>* Press any key to accept reality.</p>
+        <p>* Press CTRL+ALT+DEL to apologize to Kaushik.</p>
+        <br>
+        <p>Dumping physical memory to disk: <span id="memory-dump">0</span>%</p>
+    </div>
+
+    <div class="container" id="dashboard">
+        <div class="status-bar">
+            <h1>PROTOCOL v.9.9</h1>
+            <p>Target: <span style="color:white">RUMINA</span> | Admin: <span style="color:var(--neon-green)">KAUSHIK</span></p>
+            <p>Status: <span class="blink" style="color:var(--neon-red)">RESTRICTED</span></p>
+        </div>
+
+        <div id="step1" class="step active">
+            <p style="color: var(--neon-red);">ALERT: User 'Rumina' blocked from accessing Kaushik.</p>
+            <div class="log-box" id="audit-logs">
+                > CONNECTING TO SERVER...<br>
+                > IDENTIFYING USER: RUMINA<br>
+                > DETECTING ATTITUDE... [CRITICAL LEVEL]<br>
+                > ANALYZING 'GADHINESS'... [100% MATCH]<br>
+                > ACCESS DENIED.<br>
+            </div>
+            <button class="btn" onclick="nextStep(2)">FIX MY ACCOUNT</button>
+        </div>
+
+        <div id="step2" class="step">
+            <h2>// TASK 1: IDENTIFICATION</h2>
+            <p>Who is the boss of this friendship?</p>
+            <div class="btn-group">
+                <button class="btn btn-danger" onclick="triggerBadAlert()">RUMINA</button>
+                <button class="btn" onclick="nextStep(3)">KAUSHIK</button>
+            </div>
+        </div>
+
+        <div id="step3" class="step">
+            <h2>// TASK 2: VISUAL ANALYSIS</h2>
+            <p>Statement: "Kaushik is incredibly handsome and cool."</p>
+            <div class="btn-group">
+                <button class="btn" onclick="nextStep(4)">TRUE / AGREE</button>
+                <button class="btn btn-danger" onclick="triggerBadAlert()">FALSE / DISAGREE</button>
+            </div>
+        </div>
+
+        <div id="step4" class="step">
+            <h2>// TASK 3: KNOWLEDGE CHECK</h2>
+            <p>Complete the sentence: "Kaushik is ________( smart/genius)"</p>
+            <input type="text" id="q3-input" placeholder="Type answer...">
+            <button class="btn" onclick="checkInput()">SUBMIT</button>
+        </div>
+
+        <div id="step5" class="step">
+            <h2>// TASK 4: IQ EVALUATION</h2>
+            <p>Calculated IQ of User 'Rumina':</p>
+            <div class="btn-group">
+                <button class="btn btn-danger" onclick="triggerBadAlert()">HIGH (150+)</button>
+                <button class="btn btn-danger" onclick="triggerBadAlert()">AVERAGE</button>
+            </div>
+            <button class="btn" style="margin-top:10px" onclick="nextStep(6)">NEGATIVE (POTATO LEVEL)</button>
+        </div>
+
+        <div id="step6" class="step">
+            <h2>// TASK 5: REALITY ACCEPTANCE</h2>
+            <p>Please set your 'Gadhiness' level on the slider below:</p>
+            <input type="range" min="0" max="100" value="0" oninput="rigSlider(this)">
+            <p id="slider-val" style="color:var(--neon-green)">0%</p>
+            <p style="font-size: 0.8rem; color: #555;">(System will auto-correct if you lie)</p>
+            <button class="btn" onclick="nextStep(7)">CONFIRM STATUS</button>
+        </div>
+
+        <div id="step7" class="step">
+            <h2>// TASK 6: FINAL RESISTANCE</h2>
+            <p>Are you done being annoying to Kaushik?</p>
+            <div id="moving-target">
+                <button id="run-btn" class="btn btn-danger" onmouseover="moveBtn()">NO, NEVER</button>
+            </div>
+            <button class="btn" style="margin-top:20px" onclick="nextStep(8)">YES, SORRY</button>
+        </div>
+
+        <div id="step8" class="step">
+            <h2>// TASK 7: SYSTEM REBOOT</h2>
+            <p>Processing data... Rumina admitted she is a potato.</p>
+            <p>Click below to restore connection.</p>
+            <button class="btn" onclick="triggerBSOD()">RESTORE NOW</button>
+        </div>
+
+        <div id="step9" class="step">
+            <h2 style="color: var(--neon-blue);">// AUDIT COMPLETE</h2>
+            <p>System restored. Status: <strong style="color:white">PROBATION</strong></p>
+            <p>To finalize, you must send Kaushik this exact voice note:</p>
+            <div style="background: #000; padding: 20px; border: 2px dashed var(--neon-green); color: #fff; margin-top:20px;">
+                "I'm gadhiii... and Kaushik is the best."
+            </div>
+            <p style="margin-top: 20px; font-size: 0.8rem; color: var(--text-dim);">Failure to send = Permanent Block.</p>
+        </div>
+
+    </div>
+
+    <script>
+        // --- INSULTS LIST ---
+        const alerts = [
+            "⚠️ U STUPID GIRL CLICK THE OTHER OPTION ",
+            "⚠️ Rumina... don't be smart. Click the other one.",
+            "⚠️ Error: Lying detected. Kaushik is watching.",
+            "⚠️ Are you blind? That is the wrong answer.",
+            "⚠️ System Overload: Stop denying the truth!",
+            "⚠️ Warning: Potato brain detected. Try again."
+        ];
+
+        // --- CUSTOM ALERT LOGIC ---
+        function triggerBadAlert() {
+            const randomMsg = alerts[Math.floor(Math.random() * alerts.length)];
+            document.getElementById('alert-msg').innerText = randomMsg;
+            const overlay = document.getElementById('custom-alert-overlay');
+            overlay.style.display = 'flex';
+        }
+
+        function closeAlert() {
+            document.getElementById('custom-alert-overlay').style.display = 'none';
+        }
+
+        // --- BOOT SEQUENCE ---
+        const bootText = [
+            "INITIALIZING KAUSHIK_OS...",
+            "LOADING USER DATABASE...",
+            "FOUND USER: RUMINA",
+            "SCANNING FOR BRAIN CELLS... 0 FOUND",
+            "LOADING PROTOCOLS......",
+            "BOOT COMPLETE."
+        ];
+        let bootIndex = 0;
+        function typeBoot() {
+            if (bootIndex < bootText.length) {
+                document.getElementById('boot-text').innerHTML += bootText[bootIndex] + "<br>";
+                bootIndex++;
+                setTimeout(typeBoot, 400); 
+            } else {
+                setTimeout(() => {
+                    document.getElementById('boot-screen').style.display = 'none';
+                    document.getElementById('dashboard').classList.add('active');
+                }, 800);
+            }
+        }
+        window.onload = typeBoot;
+
+        // --- NAVIGATION ---
+        function nextStep(n) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step' + n).classList.add('active');
+        }
+
+        function checkInput() {
+            const val = document.getElementById('q3-input').value.toLowerCase();
+            if (val.includes("smart") || val.includes("genius") || val.includes("best") || val.includes("god")) {
+                nextStep(5);
+            } else {
+                triggerBadAlert();
+            }
+        }
+
+        function rigSlider(el) {
+            if (el.value < 90) {
+                el.value = 100;
+                document.getElementById('slider-val').innerText = "100% (MAXIMUM GADHI)";
+                document.getElementById('slider-val').style.color = "var(--neon-red)";
+            }
+        }
+
+        function moveBtn() {
+            const btn = document.getElementById('run-btn');
+            const box = document.getElementById('moving-target');
+            const x = Math.random() * (box.clientWidth - btn.clientWidth);
+            const y = Math.random() * (box.clientHeight - btn.clientHeight);
+            btn.style.left = x + 'px';
+            btn.style.top = y + 'px';
+        }
+
+        async function triggerBSOD() {
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('bsod-screen').style.display = 'block';
+            for(let i = 0; i <= 100; i+= 2) {
+                document.getElementById('memory-dump').innerText = i;
+                await new Promise(r => setTimeout(r, 50));
+            }
+            setTimeout(() => {
+                document.getElementById('bsod-screen').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                nextStep(9);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
